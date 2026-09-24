@@ -43,6 +43,20 @@
 - 💤 **躲起来 / 一键召回**：完全隐藏不挡操作，屏幕角落出现召唤按钮，点一下就回来
 - 🚀 **开机自启**：菜单里勾选即可
 
+## 📸 桌面版预览
+
+**👀 探头跟随** —— 贴着屏幕边缘，跟着鼠标上下探出小脑袋
+
+![探头跟随](docs/desktop-peek.webp)
+
+**📍 轻放固定** —— 拖到哪里，就住在哪里
+
+![轻放固定](docs/desktop-pin.webp)
+
+**📋 右键菜单** —— 换宝宝 / 全体上场 / 音乐模式 / 睡觉规矩，一应俱全
+
+![右键菜单](docs/desktop-menu.webp)
+
 ## 🌐 在线体验
 
 网页版已部署在我的博客：**[awesomeyang.com/baby-stickers](https://awesomeyang.com/baby-stickers/)**
