@@ -45,6 +45,12 @@
 
 ## 📸 桌面版预览
 
+**🎵 一句话玩法演示** —— 右键开启音乐模式，9 个宝宝集体蹦迪：
+
+![桌面版动态演示](docs/desktop-demo.gif)
+
+▶️ [观看完整演示视频（1′45″）](docs/desktop-demo.mp4) · [X 上的原帖](https://x.com/AwesomeYang_com/status/2100932629080191158)
+
 **👀 探头跟随** —— 贴着屏幕边缘，跟着鼠标上下探出小脑袋
 
 ![探头跟随](docs/desktop-peek.webp)
