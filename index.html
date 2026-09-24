@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>🍼 宝宝表情包乐园</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: "ZCOOL KuaiLe", "Yuanti SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #ffe9f0 0%, #fff6e3 30%, #e3f6ff 65%, #eaffe9 100%);
+    user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ---------- 背景装饰 ---------- */
+  #sky { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .cloud {
+    position: absolute; background: rgba(255,255,255,.75); border-radius: 999px;
+    filter: blur(1px); animation: drift linear infinite;
+  }
+  .cloud::before, .cloud::after {
+    content: ""; position: absolute; background: inherit; border-radius: 50%;
+  }
+  .cloud::before { width: 55%; height: 160%; left: 12%; top: -70%; }
+  .cloud::after  { width: 42%; height: 120%; right: 14%; top: -48%; }
+  @keyframes drift {
+    from { transform: translateX(-30vw); }
+    to   { transform: translateX(130vw); }
+  }
+  .float-emoji {
+    position: absolute; opacity: .18; font-size: 34px;
+    animation: floaty ease-in-out infinite alternate, sway ease-in-out infinite alternate;
+  }
+  @keyframes floaty { from { transform: translateY(0); } to { transform: translateY(-26px); } }
+  @keyframes sway   { from { margin-left: 0; } to { margin-left: 18px; } }
+
+  /* ---------- 顶栏 ---------- */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; pointer-events: none;
+  }
+  h1 {
+    font-size: clamp(20px, 3.4vw, 32px); color: #ff7fa5; letter-spacing: 2px;
+    text-shadow: 0 2px 0 #fff, 0 4px 10px rgba(255,127,165,.35);
+    cursor: pointer; pointer-events: auto; transition: transform .2s;
+  }
+  h1:active { transform: scale(.94) rotate(-2deg); }
+  #toolbar { display: flex; gap: 10px; pointer-events: auto; }
+  .btn {
+    border: none; cursor: pointer; font-family: inherit;
+    font-size: clamp(14px, 1.6vw, 17px); color: #7a5a3a;
+    background: rgba(255,255,255,.85); padding: 8px 16px; border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(255,183,197,.9), 0 6px 14px rgba(255,160,190,.25);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: translateY(1px) scale(.96); box-shadow: 0 1px 0 rgba(255,183,197,.9); }
+
+  /* ---------- 贴纸 ---------- */
+  #stage { position: fixed; inset: 0; touch-action: none; }
+  .sticker {
+    position: absolute; cursor: grab; touch-action: none;
+    will-change: left, top; z-index: 10;
+  }
+  .sticker.grabbing { cursor: grabbing; z-index: 400; }
+  .sticker-inner { position: relative; transition: transform .18s cubic-bezier(.34,1.56,.64,1); }
+  .sticker.grabbing .sticker-inner { transition: none; }
+  .jumper { will-change: transform; }
+  .jumper img { display: block; width: 100%; height: auto; pointer-events: none; }
+  .jumper.jump  { animation: jump .55s cubic-bezier(.28,1.6,.4,1); }
+  .jumper.wiggle{ animation: wiggle .7s ease-in-out; }
+  .jumper.dance { animation: dance .8s ease-in-out; }
+  @keyframes jump {
+    0% { transform: translateY(0) scale(1,1); }
+    25% { transform: translateY(-4%) scale(.94,1.08); }
+    55% { transform: translateY(-26%) scale(1.06,.94); }
+    80% { transform: translateY(0) scale(.96,1.06); }
+    100%{ transform: translateY(0) scale(1,1); }
+  }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0); }
+    20% { transform: rotate(-7deg); } 40% { transform: rotate(6deg); }
+    60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); }
+  }
+  @keyframes dance {
+    0%,100% { transform: rotate(0) translateY(0); }
+    25% { transform: rotate(-6deg) translateY(-12%); }
+    50% { transform: rotate(0) translateY(0); }
+    75% { transform: rotate(6deg) translateY(-12%); }
+  }
+
+  /* ---------- 气泡 ---------- */
+  .bubble {
+    position: absolute; left: 50%; bottom: calc(100% + 10px);
+    transform: translateX(-50%) scale(0); transform-origin: bottom center;
+    background: #fff; color: #ff6f9c; white-space: nowrap;
+    font-size: 17px; letter-spacing: 1px; padding: 8px 14px; border-radius: 16px;
+    border: 2.5px solid #ffb7c9; box-shadow: 0 6px 16px rgba(255,130,170,.3);
+    pointer-events: none; z-index: 600;
+  }
+  .bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%);
+    width: 14px; height: 14px; background: #fff;
+    border-right: 2.5px solid #ffb7c9; border-bottom: 2.5px solid #ffb7c9;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .bubble.show { animation: bubble-pop .3s cubic-bezier(.34,1.8,.64,1) forwards; }
+  .bubble.hide { animation: bubble-out .25s ease forwards; }
+  @keyframes bubble-pop { to { transform: translateX(-50%) scale(1); } }
+  @keyframes bubble-out { from { transform: translateX(-50%) scale(1); opacity: 1; } to { transform: translateX(-50%) scale(.4); opacity: 0; } }
+
+  /* ---------- 粒子 ---------- */
+  .particle {
+    position: fixed; pointer-events: none; z-index: 800; font-size: 22px;
+    animation: burst .9s cubic-bezier(.2,.7,.4,1) forwards;
+  }
+  @keyframes burst {
+    from { transform: translate(0,0) scale(.6) rotate(0); opacity: 1; }
+    to   { transform: translate(var(--dx), var(--dy)) scale(1.25) rotate(var(--rot)); opacity: 0; }
+  }
+  .confetti {
+    position: fixed; top: -40px; pointer-events: none; z-index: 799; font-size: 24px;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(var(--rot)); }
+  }
+  .rise-emoji {
+    position: absolute; left: 50%; top: 0; pointer-events: none; z-index: 550;
+    font-size: 20px; animation: rise 1.6s ease-out forwards;
+  }
+  @keyframes rise {
+    from { transform: translate(-50%, 0) scale(.7); opacity: 0; }
+    20%  { opacity: 1; }
+    to   { transform: translate(-50%, -70px) scale(1.15); opacity: 0; }
+  }
+
+  /* ---------- 底部提示 ---------- */
+  #hint {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 500; color: #b0846a; background: rgba(255,255,255,.7);
+    padding: 8px 18px; border-radius: 999px; font-size: clamp(12px, 1.5vw, 15px);
+    letter-spacing: 1px; white-space: nowrap; backdrop-filter: blur(4px);
+    box-shadow: 0 4px 12px rgba(200,160,140,.18);
+    animation: hint-breathe 3s ease-in-out infinite;
+  }
+  @keyframes hint-breathe { 0%,100% { opacity:.85; } 50% { opacity:1; } }
+
+  @media (max-width: 640px) {
+    header { flex-direction: column; gap: 8px; }
+    #hint { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+  <div id="sky"></div>
+
+  <header>
+    <h1 id="title">🍼 宝宝表情包乐园</h1>
+    <div id="toolbar">
+      <button class="btn" id="btn-party">🎉 撒花</button>
+      <button class="btn" id="btn-home">🔄 归位</button>
+      <button class="btn" id="btn-sound">🔊</button>
+    </div>
+  </header>
+
+  <div id="stage"></div>
+  <div id="hint">🖐️ 拖动宝宝到处跑 · 👆 点一点有话说 · ✌️ 连点两下有惊喜</div>
+
+<script>
+(() => {
+  const BABIES = [
+    { img: 'stickers/baby-1.png', phrase: '喜欢你',  emoji: '💗', say: ['最喜欢你啦～', '抱抱！', '心给你 💓'] },
+    { img: 'stickers/baby-2.png', phrase: '谢谢你哦', emoji: '🙏', say: ['谢谢谢谢你～', '么么哒！', '你真好 🥰'] },
+    { img: 'stickers/baby-3.png', phrase: '我可以',  emoji: '👍', say: ['我可以！冲鸭！', '没问题～', '包在我身上 💪'] },
+    { img: 'stickers/baby-4.png', phrase: '怎么啦?',  emoji: '🤔', say: ['怎么啦？', '你说什么呀？', '我听听 👂'] },
+    { img: 'stickers/baby-5.png', phrase: '保密',    emoji: '🤫', say: ['嘘——保密！', '我不说～', '偷偷告诉你…才不！'] },
+    { img: 'stickers/baby-6.png', phrase: '太开心啦', emoji: '🎉', say: ['太开心啦！！', '耶耶耶！', '开心到飞起 🛫'] },
+    { img: 'stickers/baby-7.png', phrase: '睡觉觉',  emoji: '💤', say: ['困困了…', '呼呼 zzZ', '别吵，睡觉觉 💤'] },
+    { img: 'stickers/baby-8.png', phrase: '羞羞',    emoji: '😳', say: ['哎呀羞羞！', '不许看我～', '脸红红了 (>﹏<)'] },
+    { img: 'stickers/baby-9.png', phrase: '拜拜呀',  emoji: '👋', say: ['拜拜呀～', '下次再玩哦！', '挥挥小手 👋'] },
+  ];
+  const SPARKS = ['❤️','✨','🌟','💫','🎈','🌈','🧸','🍭'];
+  const CONFETTI = ['🎉','🎊','✨','🎈','🌟','💗','💛','💙'];
+  const KAOMOJI = ['(๑•̀ㅂ•́)و✧','ヾ(≧▽≦*)o','(｡･ω･｡)','٩(❛ᴗ❛)۶','(づ￣ ³￣)づ'];
+
+  const stage = document.getElementById('stage');
+  const SW = () => window.innerWidth, SH = () => window.innerHeight;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  /* ================= 音效（WebAudio 现场合成，无需素材） ================= */
+  let actx = null, muted = localStorage.getItem('babyMuted') === '1';
+  const soundBtn = document.getElementById('btn-sound');
+  const renderSoundBtn = () => soundBtn.textContent = muted ? '🔇' : '🔊';
+  renderSoundBtn();
+  soundBtn.addEventListener('click', () => {
+    muted = !muted; localStorage.setItem('babyMuted', muted ? '1' : '0'); renderSoundBtn();
+    if (!muted) tone(660, 880, .1, 'sine', .12);
+  });
+  function ensureAudio() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (actx && actx.state === 'suspended') actx.resume();
+  }
+  function tone(f0, f1, dur, type = 'sine', vol = .15) {
+    if (muted || !actx) return;
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(t); o.stop(t + dur + .02);
+  }
+  const sndGrab  = () => tone(300, 520, .09, 'triangle', .12);
+  const sndThrow = () => tone(520, 260, .14, 'triangle', .1);
+  const sndBoing = () => { tone(700, 1100, .08, 'sine', .12); setTimeout(() => tone(1100, 800, .1, 'sine', .1), 70); };
+  const sndChime = () => { [523, 659, 784].forEach((f, i) => setTimeout(() => tone(f, f * 1.02, .18, 'sine', .1), i * 90)); };
+
+  /* ================= 背景 ================= */
+  const sky = document.getElementById('sky');
+  (function buildSky() {
+    for (let i = 0; i < 5; i++) {
+      const c = document.createElement('div');
+      c.className = 'cloud';
+      const w = rand(90, 190);
+      c.style.width = w + 'px'; c.style.height = w * .3 + 'px';
+      c.style.top = rand(4, 88) + 'vh';
+      c.style.animationDuration = rand(50, 110) + 's';
+      c.style.animationDelay = -rand(0, 60) + 's';
+      c.style.opacity = rand(.4, .8);
+      sky.appendChild(c);
+    }
+    ['☁️','🌈','⭐','🍭','🎈','🧸','🌈','☁️'].forEach((e, i) => {
+      const s = document.createElement('span');
+      s.className = 'float-emoji'; s.textContent = e;
+      s.style.left = rand(2, 92) + 'vw'; s.style.top = rand(6, 90) + 'vh';
+      s.style.animationDuration = rand(3, 6) + 's, ' + rand(4, 8) + 's';
+      s.style.fontSize = rand(22, 44) + 'px';
+      sky.appendChild(s);
+    });
+  })();
+
+  /* ================= 贴纸 & 物理 ================= */
+  const stickers = [];
+  const stWidth = () => Math.max(104, Math.min(168, SW() * 0.135));
+
+  // 每行最高贴纸的宽高比（h/w，含余量），用于按行自适应大小
+  const ROW_RATIO = [1.48, 1.82, 1.65];
+  function rowWidth(r, cellH) {
+    return Math.max(88, Math.min(stWidth(), (cellH - 20) / ROW_RATIO[r]));
+  }
+
+  BABIES.forEach((b, i) => {
+    const el = document.createElement('div');
+    el.className = 'sticker';
+    el.innerHTML = `<div class="sticker-inner"><div class="jumper"><img src="${b.img}" alt="${b.phrase}" draggable="false"></div></div>`;
+    stage.appendChild(el);
+    const img = el.querySelector('img');
+    const s = {
+      b, el, jumper: el.querySelector('.jumper'),
+      x: 0, y: 0, vx: 0, vy: 0, home: { x: 0, y: 0 },
+      baseAngle: rand(-6, 6), dragging: false, grabbed: false,
+      bobPhase: rand(0, Math.PI * 2), w: stWidth(), h: stWidth(),
+      lastTap: 0, bubbleTimer: null,
+    };
+    img.addEventListener('load', () => { s.h = s.w * (img.naturalHeight / img.naturalWidth); });
+    s.h = s.w * 1.5; // 先给个估计，load 后修正
+    stickers.push(s);
+  });
+
+  function layoutHomes(resetPos = false, shuffle = false) {
+    // 松散 3×3 网格 + 抖动，避开顶栏与底栏，按行内最高贴纸保证不重叠
+    const top = 100, bottom = SH() - 92, left = SW() * .08, right = SW() * .92;
+    const cellH = (bottom - top) / 3, cellW = (right - left) / 3;
+    const order = stickers.map((s, i) => i);
+    if (shuffle) order.sort(() => Math.random() - .5);
+    order.forEach((idx, k) => {
+      const s = stickers[idx];
+      const r = Math.floor(k / 3), c = k % 3;
+      const w = rowWidth(r, cellH);
+      s.w = w; s.el.style.width = w + 'px';
+      const img = s.el.querySelector('img');
+      s.h = w * (img.naturalHeight && img.naturalWidth ? img.naturalHeight / img.naturalWidth : 1.5);
+      const cx = left + cellW * (c + .5) + rand(-14, 14);
+      const cy = top + cellH * (r + .5) + rand(-6, 6);
+      s.home = { x: cx - w / 2, y: Math.max(88, cy - s.h / 2) };
+      if (resetPos && !s.dragging) { s.x = s.home.x; s.y = s.home.y; s.vx = s.vy = 0; }
+    });
+  }
+
+  let lastT = performance.now();
+  function tick(now) {
+    const dt = Math.min(.033, (now - lastT) / 1000); lastT = now;
+    const t = now / 1000;
+    for (const s of stickers) {
+      if (s.dragging) {
+        // 位置由指针事件平滑跟随，这里只做轻微惯性衰减
+        s.vx *= .8; s.vy *= .8;
+      } else {
+        // 弹簧回家 + 墙壁反弹
+        const k = 3.2, damp = 1.6;
+        s.vx += (s.home.x - s.x) * k * dt;
+        s.vy += (s.home.y - s.y) * k * dt;
+        s.vx *= (1 - damp * dt); s.vy *= (1 - damp * dt);
+        s.vx = Math.max(-2600, Math.min(2600, s.vx));
+        s.vy = Math.max(-2600, Math.min(2600, s.vy));
+        s.x += s.vx * dt; s.y += s.vy * dt;
+
+        const maxX = SW() - s.w, maxY = SH() - s.h;
+        if (s.x < 0)            { s.x = 0;          s.vx = Math.abs(s.vx) * .68; }
+        if (s.x > maxX)         { s.x = maxX;       s.vx = -Math.abs(s.vx) * .68; }
+        if (s.y < 74)           { s.y = 74;         s.vy = Math.abs(s.vy) * .68; }
+        if (s.y > maxY)         { s.y = maxY;
+          if (Math.abs(s.vy) > 120) { s.vy = -Math.abs(s.vy) * .5; if (!s.mutedBounce) tone(rand(200,300), rand(120,180), .08, 'sine', .05); }
+          else s.vy = 0;
+          s.vx *= .92;
+        }
+      }
+      // 渲染：静止时加一点呼吸浮动
+      const settled = !s.dragging && Math.abs(s.vx) < 8 && Math.abs(s.vy) < 8;
+      const bobY = settled ? Math.sin(t * 2 + s.bobPhase) * 5 : 0;
+      const tilt = s.baseAngle + Math.max(-9, Math.min(9, s.vx * .012));
+      const grabScale = s.grabbed ? 1.14 : (settled ? 1 + Math.sin(t * 2 + s.bobPhase) * .008 : 1);
+      s.el.style.left = s.x + 'px';
+      s.el.style.top = (s.y + bobY) + 'px';
+      s.el.querySelector('.sticker-inner').style.transform =
+        `rotate(${tilt}deg) scale(${grabScale})`;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  /* ================= 气泡 / 粒子 ================= */
+  function showBubble(s, text, dur = 1800) {
+    clearTimeout(s.bubbleTimer);
+    s.el.querySelector('.bubble')?.remove();
+    const bub = document.createElement('div');
+    bub.className = 'bubble'; bub.textContent = text;
+    s.el.appendChild(bub);
+    requestAnimationFrame(() => bub.classList.add('show'));
+    s.bubbleTimer = setTimeout(() => {
+      bub.classList.remove('show'); bub.classList.add('hide');
+      setTimeout(() => bub.remove(), 260);
+    }, dur);
+  }
+  function burst(x, y, n = 10, pool = SPARKS) {
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('span');
+      p.className = 'particle'; p.textContent = pick(pool);
+      const ang = rand(0, Math.PI * 2), d = rand(50, 140);
+      p.style.left = x + 'px'; p.style.top = y + 'px';
+      p.style.setProperty('--dx', Math.cos(ang) * d + 'px');
+      p.style.setProperty('--dy', Math.sin(ang) * d - 30 + 'px');
+      p.style.setProperty('--rot', rand(-220, 220) + 'deg');
+      p.style.fontSize = rand(16, 30) + 'px';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 950);
+    }
+  }
+  function confettiRain(n = 26) {
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement('span');
+      c.className = 'confetti'; c.textContent = pick(CONFETTI);
+      c.style.left = rand(0, 100) + 'vw';
+      c.style.setProperty('--rot', rand(-360, 360) + 'deg');
+      c.style.animationDuration = rand(1.6, 3.2) + 's';
+      c.style.fontSize = rand(18, 32) + 'px';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 3400);
+    }
+  }
+  function riseEmoji(s, emoji) {
+    const e = document.createElement('span');
+    e.className = 'rise-emoji'; e.textContent = emoji;
+    s.el.appendChild(e);
+    setTimeout(() => e.remove(), 1650);
+  }
+  function playAnim(s, cls) {
+    s.jumper.classList.remove(cls); void s.jumper.offsetWidth;
+    s.jumper.classList.add(cls);
+    setTimeout(() => s.jumper.classList.remove(cls), 900);
+  }
+
+  /* ================= 指针交互 ================= */
+  let active = null, lastPointer = { x: 0, y: 0 };
+  stage.addEventListener('pointerdown', e => {
+    ensureAudio();
+    const el = e.target.closest('.sticker');
+    if (!el) return;
+    const s = stickers.find(v => v.el === el);
+    active = s; s.dragging = true; s.grabbed = true;
+    el.classList.add('grabbing');
+    el.setPointerCapture?.(e.pointerId);
+    lastPointer = { x: e.clientX, y: e.clientY };
+    s.vx = s.vy = 0;
+    sndGrab();
+  });
+  window.addEventListener('pointermove', e => {
+    if (!active || !active.dragging) return;
+    const dx = e.clientX - lastPointer.x, dy = e.clientY - lastPointer.y;
+    lastPointer = { x: e.clientX, y: e.clientY };
+    active.x += dx; active.y += dy;
+    active.vx = dx * 34; active.vy = dy * 34; // 估算抛出速度
+    active.x = Math.max(-20, Math.min(SW() - active.w + 20, active.x));
+    active.y = Math.max(60, Math.min(SH() - active.h, active.y));
+  });
+  window.addEventListener('pointerup', e => {
+    if (!active) return;
+    const s = active; active = null;
+    s.dragging = false; s.grabbed = false;
+    s.el.classList.remove('grabbing');
+    const moved = Math.hypot(e.clientX - lastPointer.x, e.clientY - lastPointer.y);
+    // 速度小 + 没怎么移动 → 视为点击
+    if (Math.hypot(s.vx, s.vy) < 60 && moved < 30) {
+      handleTap(s, e);
+    } else {
+      sndThrow();
+    }
+  });
+
+  function handleTap(s, e) {
+    const now = performance.now();
+    const isDouble = now - s.lastTap < 380;
+    s.lastTap = now;
+    if (isDouble) {
+      playAnim(s, 'dance');
+      burst(s.x + s.w / 2, s.y + s.h * .35, 14);
+      showBubble(s, pick(['哇！撒星星 ✨', '被抓到啦 😝', '好痒好痒～', pick(KAOMOJI)]));
+      sndChime();
+    } else {
+      playAnim(s, 'jump');
+      riseEmoji(s, s.b.emoji);
+      showBubble(s, pick(s.b.say));
+      sndBoing();
+    }
+  }
+
+  // 点标题：全体宝宝跳一下
+  document.getElementById('title').addEventListener('click', () => {
+    ensureAudio(); sndChime();
+    stickers.forEach((s, i) => setTimeout(() => { playAnim(s, 'jump'); riseEmoji(s, s.b.emoji); }, i * 90));
+    showBubble(makeTempBubbleHost(SW() / 2, 90), '大家一起动起来～ 🎶', 1600);
+  });
+  function makeTempBubbleHost(x, y) {
+    const d = document.createElement('div');
+    d.style.cssText = `position:fixed;left:${x}px;top:${y}px;z-index:650;width:0;`;
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 2000);
+    return { el: d, x: 0, y: 0, w: 0, bubbleTimer: 0 };
+  }
+
+  /* ================= 按钮 ================= */
+  document.getElementById('btn-party').addEventListener('click', () => {
+    ensureAudio(); confettiRain(); sndChime();
+    stickers.forEach((s, i) => setTimeout(() => playAnim(s, 'dance'), i * 100));
+  });
+  document.getElementById('btn-home').addEventListener('click', () => {
+    ensureAudio(); sndChime();
+    stickers.forEach(s => {
+      s.vx = (s.home.x - s.x) * 4;
+      s.vy = (s.home.y - s.y) * 4;
+    });
+  });
+
+  /* ================= 挂机小动作 ================= */
+  setInterval(() => {
+    if (document.hidden || active) return;
+    const s = pick(stickers);
+    const roll = Math.random();
+    if (roll < .45) { s.vy -= rand(220, 380); tone(rand(500,700), rand(800,1000), .07, 'sine', .05); }
+    else if (roll < .75) playAnim(s, 'wiggle');
+    else riseEmoji(s, s.b.phrase === '睡觉觉' ? '💤' : pick(['💗','✨','❓','🎵','🫧']));
+  }, 3800);
+
+  /* ================= 启动 & 自适应 ================= */
+  window.addEventListener('resize', () => {
+    // 保持相对位置，收敛进新窗口
+    for (const s of stickers) {
+      s.x = Math.max(0, Math.min(s.x, SW() - s.w));
+      s.y = Math.max(74, Math.min(s.y, SH() - s.h));
+    }
+    layoutHomes(false);
+  });
+  window.addEventListener('load', () => layoutHomes(true));
+  // 图片可能比 window.load 更早完成，兜底再排一次
+  setTimeout(() => { if (!active) layoutHomes(true); }, 300);
+  layoutHomes(true);
+})();
+</script>
+</body>
+</html>

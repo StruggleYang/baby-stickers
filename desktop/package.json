@@ -1,0 +1,14 @@
+{
+  "name": "baby-stickers-desktop",
+  "productName": "宝宝表情包",
+  "version": "1.0.0",
+  "description": "宝宝的表情包漂浮在 Mac 桌面上",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.4.2"
+  }
+}
